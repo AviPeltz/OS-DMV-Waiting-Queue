@@ -2,6 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { fetchBranches, fetchBranchServices, callNextTicket, fetchQueueStatus, Branch, Service, QueueStatus, APIError } from '@/lib/api'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { ArrowLeft, RefreshCw, Users, TrendingUp, Activity, AlertCircle, CheckCircle2 } from 'lucide-react'
+import Link from 'next/link'
 
 export default function StaffPortal() {
   const [branches, setBranches] = useState<Branch[]>([])
@@ -88,34 +93,49 @@ export default function StaffPortal() {
 
   if (loadingData) {
     return (
-      <>
-        <header className="header">
-          <h1>Staff Portal</h1>
-        </header>
-        <div className="container">
-          <div className="spinner"></div>
-        </div>
-      </>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="spinner"></div>
+      </div>
     )
   }
 
+  const totalWaiting = queueStatus?.queues.reduce((sum, q) => sum + q.waiting_count, 0) || 0
+  const activeQueues = queueStatus?.queues.filter(q => q.currently_serving).length || 0
+
   return (
-    <>
-      <header className="header">
-        <h1>Staff Portal</h1>
-        <p>Call next ticket and manage queues</p>
-      </header>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="container max-w-6xl mx-auto px-4 py-8">
+        {/* Back Button */}
+        <Link href="/" className="inline-flex items-center gap-2 text-blue-900 hover:text-blue-700 mb-6 font-semibold transition-colors">
+          <ArrowLeft className="w-4 h-4" />
+          Back to Home
+        </Link>
 
-      <div className="container">
-        <div className="card">
-          <h2>Select Branch</h2>
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-black text-blue-900 mb-2">Staff Portal</h1>
+              <p className="text-slate-600">Manage queues and call next ticket</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="pulse-dot"></span>
+              <span className="text-sm font-semibold text-green-600">System Online</span>
+            </div>
+          </div>
+        </div>
 
-          <div className="form-group">
-            <label htmlFor="branch">DMV Branch</label>
+        {/* Branch Selection */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Select Branch</CardTitle>
+            <CardDescription>Choose your DMV branch location</CardDescription>
+          </CardHeader>
+          <CardContent>
             <select
-              id="branch"
               value={selectedBranch}
               onChange={(e) => setSelectedBranch(e.target.value)}
+              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
             >
               <option value="">-- Choose a branch --</option>
               {branches.map((branch) => (
@@ -124,144 +144,199 @@ export default function StaffPortal() {
                 </option>
               ))}
             </select>
-          </div>
 
-          <div className="alert alert-info">
-            <strong>Note:</strong> This portal uses API key authentication for staff operations.
-            For production use, implement JWT/session-based authentication instead of the shared API key.
-          </div>
-        </div>
+            <Card className="mt-4 bg-yellow-50 border-yellow-200">
+              <CardContent className="p-4">
+                <div className="flex gap-2">
+                  <AlertCircle className="w-5 h-5 text-yellow-700 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-yellow-800">
+                    <strong>Note:</strong> This portal uses API key authentication. For production,
+                    implement JWT/session-based authentication instead of the shared API key.
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </CardContent>
+        </Card>
 
+        {/* Alerts */}
+        {successMessage && (
+          <Card className="mb-6 border-green-200 bg-green-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                <p className="text-green-800 font-semibold">{successMessage}</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {error && (
+          <Card className="mb-6 border-red-200 bg-red-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+                <p className="text-red-800 font-semibold">{error}</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Queue Status */}
         {selectedBranch && queueStatus && (
           <>
-            {successMessage && (
-              <div className="alert alert-success">
-                {successMessage}
-              </div>
-            )}
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-slate-500 font-semibold uppercase tracking-wide">Total Waiting</p>
+                      <p className="text-3xl font-black text-blue-900 mt-1">{totalWaiting}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                      <Users className="w-6 h-6 text-blue-900" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-            {error && (
-              <div className="alert alert-error">
-                {error}
-              </div>
-            )}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-slate-500 font-semibold uppercase tracking-wide">Active Services</p>
+                      <p className="text-3xl font-black text-green-600 mt-1">{activeQueues}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                      <Activity className="w-6 h-6 text-green-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-            <div className="card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <h2>Queue Status - {queueStatus.branch_name}</h2>
-                <button
-                  onClick={() => loadQueueStatus(parseInt(selectedBranch))}
-                  className="button button-secondary"
-                  style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
-                >
-                  Refresh
-                </button>
-              </div>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-slate-500 font-semibold uppercase tracking-wide">Service Types</p>
+                      <p className="text-3xl font-black text-slate-900 mt-1">{queueStatus.queues.length}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center">
+                      <TrendingUp className="w-6 h-6 text-slate-700" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
-              <table className="queue-table">
-                <thead>
-                  <tr>
-                    <th>Service</th>
-                    <th>Waiting</th>
-                    <th>Currently Serving</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
+            {/* Queue Management */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Queue Management</CardTitle>
+                    <CardDescription>{queueStatus.branch_name}</CardDescription>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => loadQueueStatus(parseInt(selectedBranch))}
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Refresh
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
                   {queueStatus.queues.map((queue) => (
-                    <tr key={queue.service_code}>
-                      <td>
-                        <strong>{queue.service_name}</strong>
-                        <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-                          {queue.service_code}
+                    <Card key={queue.service_code} className="border-l-4 border-l-blue-900">
+                      <CardContent className="p-6">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          <div className="flex-1">
+                            <h3 className="font-bold text-lg text-slate-900 mb-1">
+                              {queue.service_name}
+                            </h3>
+                            <p className="text-sm text-slate-500 font-mono">{queue.service_code}</p>
+                          </div>
+
+                          <div className="flex items-center gap-6">
+                            <div className="text-center">
+                              <Badge
+                                className={
+                                  queue.waiting_count > 0
+                                    ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                                    : 'bg-slate-100 text-slate-600 border-slate-200'
+                                }
+                              >
+                                {queue.waiting_count} waiting
+                              </Badge>
+                            </div>
+
+                            <div className="text-center min-w-[120px]">
+                              {queue.currently_serving ? (
+                                <div>
+                                  <p className="text-xs text-slate-500 mb-1">Now Serving</p>
+                                  <Badge className="bg-green-100 text-green-800 border-green-200 font-mono">
+                                    {queue.currently_serving}
+                                  </Badge>
+                                </div>
+                              ) : (
+                                <p className="text-sm text-slate-400">None serving</p>
+                              )}
+                            </div>
+
+                            <Button
+                              onClick={() => handleCallNext(queue.service_code)}
+                              disabled={loading || queue.waiting_count === 0}
+                              className="min-w-[120px]"
+                            >
+                              {loading ? (
+                                <>
+                                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                                  Calling...
+                                </>
+                              ) : (
+                                'Call Next'
+                              )}
+                            </Button>
+                          </div>
                         </div>
-                      </td>
-                      <td>
-                        <span style={{
-                          padding: '0.25rem 0.75rem',
-                          borderRadius: '12px',
-                          backgroundColor: queue.waiting_count > 0 ? '#fef3c7' : '#f3f4f6',
-                          color: queue.waiting_count > 0 ? '#92400e' : '#6b7280',
-                          fontWeight: '500'
-                        }}>
-                          {queue.waiting_count} waiting
-                        </span>
-                      </td>
-                      <td>
-                        {queue.currently_serving ? (
-                          <span style={{
-                            padding: '0.25rem 0.75rem',
-                            borderRadius: '12px',
-                            backgroundColor: '#d1fae5',
-                            color: '#065f46',
-                            fontWeight: '500'
-                          }}>
-                            {queue.currently_serving}
-                          </span>
-                        ) : (
-                          <span style={{ color: '#9ca3af' }}>None</span>
-                        )}
-                      </td>
-                      <td>
-                        <button
-                          onClick={() => handleCallNext(queue.service_code)}
-                          disabled={loading || queue.waiting_count === 0}
-                          className="button"
-                          style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
-                        >
-                          {loading ? 'Calling...' : 'Call Next'}
-                        </button>
-                      </td>
-                    </tr>
+                      </CardContent>
+                    </Card>
                   ))}
-                </tbody>
-              </table>
+                </div>
 
-              {queueStatus.queues.every(q => q.waiting_count === 0) && (
-                <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
-                  No tickets waiting in any queue
-                </div>
-              )}
-            </div>
+                {queueStatus.queues.every(q => q.waiting_count === 0) && (
+                  <div className="text-center py-12">
+                    <Users className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                    <p className="text-slate-500 font-semibold">No tickets waiting in any queue</p>
+                    <p className="text-sm text-slate-400 mt-1">All caught up!</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-            <div className="card">
-              <h3 style={{ marginBottom: '1rem', color: '#1e3a8a' }}>Quick Stats</h3>
-              <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-                <div style={{ padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '4px' }}>
-                  <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>Total Waiting</div>
-                  <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1e3a8a' }}>
-                    {queueStatus.queues.reduce((sum, q) => sum + q.waiting_count, 0)}
-                  </div>
-                </div>
-                <div style={{ padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '4px' }}>
-                  <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>Active Services</div>
-                  <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1e3a8a' }}>
-                    {queueStatus.queues.filter(q => q.currently_serving).length}
-                  </div>
-                </div>
-                <div style={{ padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '4px' }}>
-                  <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>Available Queues</div>
-                  <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1e3a8a' }}>
-                    {queueStatus.queues.length}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="card" style={{ backgroundColor: '#fffbeb', border: '1px solid #fcd34d' }}>
-              <h4 style={{ color: '#92400e', marginBottom: '0.5rem' }}>Future Integration Points</h4>
-              <ul style={{ marginLeft: '1.5rem', color: '#78350f', lineHeight: '1.8' }}>
-                <li>WebSocket integration for real-time updates to display monitors</li>
-                <li>Bridge to Qmatic display URLs (e.g., https://mt-cadmvoas.us.qmatic.cloud/...)</li>
-                <li>Staff authentication and role-based access control</li>
-                <li>Audit logging for all ticket operations</li>
-                <li>Multi-counter support with counter assignment</li>
-                <li>Service pause/resume controls</li>
-              </ul>
-            </div>
+            {/* Integration Info */}
+            <Card className="mt-6 bg-blue-50 border-blue-200">
+              <CardHeader>
+                <CardTitle className="text-blue-900">Future Integration Points</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2 text-sm text-blue-800">
+                  <li>• WebSocket integration for real-time updates to display monitors</li>
+                  <li>• Bridge to Qmatic display URLs (e.g., https://mt-cadmvoas.us.qmatic.cloud/...)</li>
+                  <li>• Staff authentication and role-based access control</li>
+                  <li>• Audit logging for all ticket operations</li>
+                  <li>• Multi-counter support with counter assignment</li>
+                  <li>• Service pause/resume controls</li>
+                </ul>
+              </CardContent>
+            </Card>
           </>
         )}
       </div>
-    </>
+    </div>
   )
 }

@@ -1,4 +1,4 @@
-# Known Limitations - v0.2.2
+# Known Limitations - v0.3.0
 
 This document provides an **honest assessment** of what is and isn't fixed in the current version.
 
@@ -44,72 +44,62 @@ export async function POST(request: Request) {
 
 ---
 
-### ⚠️ 2. State Machine Validation Incomplete (HIGH)
+### ✅ 2. State Machine Validation (FIXED in v0.3.0)
 
-**Status**: ⚠️ **PARTIALLY FIXED** - Only One Transition Enforced
+**Status**: ✅ **FIXED** - Complete State Machine Validation
 
 **What's Enforced**:
-- ✅ Completing tickets (must be in "called" status)
-- File: `api/main.py:302`
+- ✅ Calling tickets (must be in "waiting" status) - `api/main.py:263`
+- ✅ Completing tickets (must be in "called" status) - `api/main.py:314`
+- ✅ Cancelling tickets (must be "waiting" or "called") - `api/main.py:359`
+- ✅ Returning to queue (must be in "called" status) - `api/main.py:405`
 
-**What's NOT Enforced**:
-- ❌ Calling a ticket that's already called
-- ❌ Completing a waiting ticket directly
-- ❌ Returning ticket to queue
-- ❌ Cancelling tickets
-- ❌ Any other state transitions
+**New Endpoints Added**:
+- `POST /tickets/{ticket_number}/cancel` - Visitor can cancel their ticket
+- `POST /tickets/{ticket_number}/return-to-queue` - Staff can return called ticket to waiting
 
 **The Code**:
-- `validate_status_transition()` exists in `validators.py`
-- Defines full state machine
-- **Not wired up** to most operations
-
-**Production Requirement**:
-- Wire up validation to all status changes
-- Add cancel endpoint with validation
-- Add return-to-queue endpoint
-- Apply state machine across all mutations
+- `validate_status_transition()` from `validators.py` now wired up to all ticket mutations
+- Full state machine enforced across all operations
+- Prevents invalid transitions like completing a waiting ticket
 
 ---
 
-### ⚠️ 3. Performance Issue with Large Queues (MEDIUM)
+### ✅ 3. Performance Issue with Large Queues (FIXED in v0.3.0)
 
-**Status**: ⚠️ **Known Issue - Documented**
+**Status**: ✅ **FIXED** - Using Lightweight Counter Table
 
-**The Problem**:
-- Position calculation locks ALL waiting tickets
-- Blocks all concurrent joins while one runs
-- Doesn't scale to large queues (100+ waiting)
+**The Solution**:
+- Added `QueueCounter` table with one row per branch/service queue
+- Locks single counter row instead of all waiting tickets
+- Much faster and doesn't block other queues
 
-**Current Code** (`api/main.py:129-136`):
+**New Implementation** (`api/models.py:26-43`, `api/main.py:120-136`):
 ```python
-# Locks every waiting ticket in the queue
-waiting_tickets_subq = db.query(Ticket).filter(
-    Ticket.branch_id == branch_id,
-    Ticket.service_id == service.id,
-    Ticket.status == "waiting"
-).with_for_update().subquery()
+# Lock single counter row (fast)
+counter = db.query(QueueCounter).filter(
+    QueueCounter.branch_id == branch_id,
+    QueueCounter.service_id == service.id
+).with_for_update().first()
 
-max_position = db.query(func.coalesce(
-    func.max(waiting_tickets_subq.c.position), 0
-)).scalar()
+if not counter:
+    counter = QueueCounter(
+        branch_id=branch_id,
+        service_id=service.id,
+        next_position=1
+    )
+    db.add(counter)
+    db.flush()
+
+position = counter.next_position
+counter.next_position += 1
 ```
 
-**Why It's a Problem**:
-- Queue with 200 people: every join locks all 200 tickets
-- Serializes all concurrent joins
-- High contention under load
-
-**Production Solutions** (not implemented):
-1. **Sequence Table**: Dedicated counter per branch/service
-2. **PostgreSQL SEQUENCE**: Native database sequences
-3. **Advisory Locks**: `pg_advisory_lock()` with lighter weight
-4. **Redis Counter**: Atomic increment for position assignment
-
-**Trade-off**:
-- Current approach is **correct** but **slow**
-- Better than v0.2.1 (handles empty queue)
-- Good enough for small-medium queues (<50 people)
+**Performance Improvement**:
+- Old: Locked 200+ ticket rows for large queues
+- New: Locks 1 counter row regardless of queue size
+- No longer blocks concurrent joins to different queues
+- Scales to queues of any size
 
 ---
 
@@ -185,10 +175,10 @@ max_position = db.query(func.coalesce(
 | Component | Status | Blocker? |
 |-----------|--------|----------|
 | Core queue logic | ✅ Works | No |
-| Empty queue race | ✅ Fixed | No |
-| Large queue perf | ⚠️ Documented | Maybe |
+| Empty queue race | ✅ Fixed (v0.2.2) | No |
+| Large queue perf | ✅ Fixed (v0.3.0) | No |
+| State validation | ✅ Fixed (v0.3.0) | No |
 | Staff auth | ❌ Exposed to browsers | **YES** |
-| State validation | ⚠️ Partial (1/6 transitions) | **YES** |
 | Visitor endpoints | ✅ Public (intended) | No |
 | Tests | ❌ None | **YES** |
 | Audit logging | ❌ None | Depends |
@@ -199,10 +189,10 @@ max_position = db.query(func.coalesce(
 
 **Why not?**
 1. Staff API key visible to all browsers (critical)
-2. Incomplete state validation (high)
-3. No test coverage (high)
-4. Performance doesn't scale (medium)
-5. No monitoring/observability (medium)
+2. No test coverage (high)
+3. No monitoring/observability (medium)
+4. No audit logging (medium)
+5. No rate limiting (medium)
 
 **What is it good for?**
 - ✅ Development and local testing
@@ -221,18 +211,17 @@ max_position = db.query(func.coalesce(
 - **v0.2.0**: Added auth, but still had races
 - **v0.2.1**: Fixed some races, but not empty queue
 - **v0.2.2**: Fixed empty queue race, honest about limitations
+- **v0.3.0**: Fixed performance + state validation, added cancel/return endpoints
 
 **Still needed for v1.0**:
 1. Replace public API key with JWT/session auth
-2. Complete state machine validation
-3. Add comprehensive test suite
-4. Implement production-grade position counter (sequence table)
-5. Add rate limiting
-6. Add audit logging
-7. Add monitoring and alerting
-8. Security audit and penetration testing
+2. Add comprehensive test suite
+3. Add rate limiting
+4. Add audit logging
+5. Add monitoring and alerting
+6. Security audit and penetration testing
 
-**Estimated effort to production**: 2-4 weeks of development + security review
+**Estimated effort to production**: 1-3 weeks of development + security review
 
 ---
 

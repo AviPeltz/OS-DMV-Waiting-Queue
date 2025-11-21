@@ -89,6 +89,9 @@ export interface Branch {
   name: string;
   code: string;
   address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
 }
 
 export interface Service {

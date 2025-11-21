@@ -5,30 +5,33 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 import time
 
-def generate_ticket_number(branch_code: str) -> str:
+def generate_ticket_number(branch_code: str, service_prefix: str, position: int) -> str:
     """
     Generate a unique ticket number
 
-    Format: {BRANCH_CODE}{TIMESTAMP}{RANDOM}
-    Example: SF1732123456A42
+    Format: {SERVICE_PREFIX}{POSITION:04d}
+    Example: A0044, B0123
 
-    Note: This function generates a candidate number but does NOT check uniqueness.
-    Use create_ticket_with_retry() to handle collisions.
+    The position is padded to 4 digits and combined with the service prefix.
+    This creates readable, short ticket numbers like traditional queue systems.
 
-    In production, consider:
-    - Database sequences (PostgreSQL SERIAL)
-    - Daily counter with format: {BRANCH}-{DATE}-{SEQUENCE} (e.g., SF-20240115-001)
-    - Redis atomic counter
+    Args:
+        branch_code: Branch code (for future use/logging)
+        service_prefix: Single letter prefix for the service (A, B, C, etc.)
+        position: Queue position number
+
+    Returns:
+        Formatted ticket number (e.g., "A0044")
     """
-    timestamp = int(datetime.utcnow().timestamp() * 1000)  # milliseconds for better uniqueness
-    random_suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
-    return f"{branch_code}{timestamp}{random_suffix}"
+    return f"{service_prefix}{position:04d}"
 
 
 def create_ticket_with_retry(
     db: Session,
     ticket_data: dict,
     branch_code: str,
+    service_prefix: str,
+    position: int,
     max_retries: int = 5
 ):
     """
@@ -38,6 +41,8 @@ def create_ticket_with_retry(
         db: SQLAlchemy session
         ticket_data: Dictionary of ticket fields (excluding ticket_number)
         branch_code: Branch code for ticket number generation
+        service_prefix: Service prefix letter (A, B, C, etc.)
+        position: Queue position number
         max_retries: Maximum number of retry attempts
 
     Returns:
@@ -50,8 +55,8 @@ def create_ticket_with_retry(
 
     for attempt in range(max_retries):
         try:
-            # Generate new ticket number
-            ticket_number = generate_ticket_number(branch_code)
+            # Generate ticket number from position
+            ticket_number = generate_ticket_number(branch_code, service_prefix, position)
 
             # Create ticket with generated number
             ticket = Ticket(

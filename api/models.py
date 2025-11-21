@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Float
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Float, UniqueConstraint
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from database import Base
@@ -23,6 +23,26 @@ class Branch(Base):
     services = relationship("Service", back_populates="branch")
 
 
+class QueueCounter(Base):
+    """
+    Lightweight position counter per branch/service queue
+
+    Solves the performance problem of locking all waiting tickets.
+    Each queue gets one row; SELECT...FOR UPDATE on this single row
+    is much faster than locking hundreds of ticket rows.
+    """
+    __tablename__ = "queue_counters"
+
+    id = Column(Integer, primary_key=True, index=True)
+    branch_id = Column(Integer, ForeignKey("branches.id"), nullable=False)
+    service_id = Column(Integer, ForeignKey("services.id"), nullable=False)
+    next_position = Column(Integer, default=1, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint('branch_id', 'service_id', name='unique_branch_service_counter'),
+    )
+
+
 class Service(Base):
     """Service types offered at branches (e.g., Driver License Renewal, Vehicle Registration)"""
     __tablename__ = "services"
@@ -31,6 +51,7 @@ class Service(Base):
     branch_id = Column(Integer, ForeignKey("branches.id"), nullable=False)
     code = Column(String, nullable=False, index=True)  # e.g., "DL_RENEWAL"
     name = Column(String, nullable=False)
+    prefix = Column(String(1), nullable=False, default='A')  # Single letter prefix for tickets (A, B, C, etc.)
     avg_service_time_minutes = Column(Float, default=15.0)  # Used for ETA calculation
 
     branch = relationship("Branch", back_populates="services")

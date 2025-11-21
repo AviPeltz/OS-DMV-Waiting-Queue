@@ -1,59 +1,129 @@
 import Link from 'next/link'
+import { Users, Clock, Monitor, ChevronRight, Info } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 export default function Home() {
   return (
-    <>
-      <header className="header">
-        <h1>DMV Queue System</h1>
-        <p>Open-source queue management for California DMV</p>
-      </header>
-
-      <div className="container">
-        <div className="card">
-          <h2>Welcome</h2>
-          <p style={{ marginBottom: '1.5rem', color: '#6b7280' }}>
-            This is an open-source replacement for the DMV's queue management system.
-            Choose an option below to get started.
+    <div className="min-h-screen flex flex-col">
+      <div className="container max-w-2xl mx-auto px-4 py-12">
+        {/* Logo and Header */}
+        <div className="text-center mb-12">
+          <div className="w-20 h-20 bg-blue-900 text-white rounded-full flex items-center justify-center text-3xl font-black border-4 border-yellow-400 shadow-lg mx-auto">
+            CA
+          </div>
+          <h1 className="mt-6 text-4xl font-black text-blue-900 tracking-tight">
+            DMV OpenQueue
+          </h1>
+          <p className="text-slate-600 mt-2 text-lg">
+            California Department of Motor Vehicles
           </p>
-
-          <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))' }}>
-            <Link href="/join" style={{ textDecoration: 'none' }}>
-              <div className="card" style={{ cursor: 'pointer', transition: 'transform 0.2s', border: '2px solid #e5e7eb' }}>
-                <h3 style={{ color: '#1e3a8a', marginBottom: '0.5rem' }}>Join Queue</h3>
-                <p style={{ color: '#6b7280' }}>Get in line for DMV services</p>
-              </div>
-            </Link>
-
-            <Link href="/status" style={{ textDecoration: 'none' }}>
-              <div className="card" style={{ cursor: 'pointer', transition: 'transform 0.2s', border: '2px solid #e5e7eb' }}>
-                <h3 style={{ color: '#1e3a8a', marginBottom: '0.5rem' }}>Check Status</h3>
-                <p style={{ color: '#6b7280' }}>View your ticket status and wait time</p>
-              </div>
-            </Link>
-
-            <Link href="/staff" style={{ textDecoration: 'none' }}>
-              <div className="card" style={{ cursor: 'pointer', transition: 'transform 0.2s', border: '2px solid #e5e7eb' }}>
-                <h3 style={{ color: '#1e3a8a', marginBottom: '0.5rem' }}>Staff Portal</h3>
-                <p style={{ color: '#6b7280' }}>Call next ticket (staff only)</p>
-              </div>
-            </Link>
+          <div className="mt-3 flex items-center justify-center gap-2 text-green-600 text-sm font-semibold">
+            <span className="pulse-dot"></span>
+            System Online
           </div>
         </div>
 
-        <div className="card" style={{ marginTop: '2rem' }}>
-          <h3 style={{ color: '#1e3a8a', marginBottom: '1rem' }}>About This System</h3>
-          <p style={{ color: '#6b7280', lineHeight: '1.6' }}>
-            This is a v0 minimum viable version of an open-source DMV queue management system,
-            designed as a replacement for proprietary solutions like Qmatic. The system allows
-            visitors to join virtual queues, check their position and estimated wait time, and
-            enables staff to call the next ticket.
-          </p>
-          <p style={{ color: '#6b7280', marginTop: '1rem', lineHeight: '1.6' }}>
-            <strong>Future features:</strong> Real-time WebSocket updates, display monitor integration,
-            mobile app support, and compatibility bridges to existing vendor systems.
-          </p>
+        {/* Main Action Cards */}
+        <div className="space-y-4 mb-8">
+          <Link href="/join" className="block group">
+            <Card className="border-l-4 border-l-blue-900 hover:shadow-lg transition-all hover:-translate-y-1 cursor-pointer">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                      <Users className="w-6 h-6 text-blue-900" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-blue-900 mb-1">
+                        Get in Line
+                      </h3>
+                      <p className="text-sm text-slate-600">
+                        Join the virtual queue for DMV services
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-6 h-6 text-blue-900 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/status" className="block group">
+            <Card className="border-l-4 border-l-slate-600 hover:shadow-lg transition-all hover:-translate-y-1 cursor-pointer">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center">
+                      <Clock className="w-6 h-6 text-slate-700" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-blue-900 mb-1">
+                        Check Status
+                      </h3>
+                      <p className="text-sm text-slate-600">
+                        View your ticket and estimated wait time
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-6 h-6 text-slate-600 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/staff" className="block group">
+            <Card className="border-l-4 border-l-slate-400 bg-slate-50 hover:shadow-lg transition-all hover:-translate-y-1 cursor-pointer">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-slate-200 rounded-xl flex items-center justify-center">
+                      <Monitor className="w-6 h-6 text-slate-700" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-blue-900 mb-1">
+                        Staff Portal
+                      </h3>
+                      <p className="text-sm text-slate-600">
+                        Call next ticket and manage queues
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-slate-400 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
+
+        {/* Info Card */}
+        <Card className="bg-blue-50 border-blue-200">
+          <CardContent className="p-6">
+            <div className="flex gap-4">
+              <div className="flex-shrink-0">
+                <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                  <Info className="w-5 h-5 text-white" />
+                </div>
+              </div>
+              <div>
+                <h4 className="text-blue-900 font-bold mb-2">
+                  About OpenQueue
+                </h4>
+                <p className="text-sm text-blue-800 leading-relaxed">
+                  Open-source replacement for proprietary DMV queue systems. Join virtual queues,
+                  track your position in real-time, and receive notifications when it&apos;s your turn.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Footer */}
+        <div className="text-center py-8 text-slate-400 text-sm">
+          <p>v0.3.0 • Open Source Project</p>
         </div>
       </div>
-    </>
+    </div>
   )
 }

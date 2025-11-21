@@ -4,27 +4,24 @@ An open-source replacement for the California DMV's queue management system, cur
 
 ## ⚠️ CRITICAL: NOT PRODUCTION READY
 
-**This is v0.2.2 - Development/Learning Version**
+**This is v0.3.0 - Development/Demo Version**
 
 ### What Works
-- ✅ Basic queue management (join, check status, call next)
-- ✅ Race condition handling (including empty queues)
-- ✅ Database transaction safety
-- ✅ Ticket collision retry logic
+- ✅ Queue management (join, check status, call next, cancel, return-to-queue)
+- ✅ Race condition handling with QueueCounter table
+- ✅ Complete state machine validation
+- ✅ Modern UI with Tailwind CSS + shadcn/ui
+- ✅ Scalable position assignment
 
 ### What Doesn't Work for Production
 - ❌ **Staff API key exposed to browsers** (critical security flaw)
-- ❌ **State validation incomplete** (only 1 of 6 transitions enforced)
 - ❌ **No automated tests** (can't verify correctness)
-- ❌ **Performance issues with large queues** (locks all waiting tickets)
 - ❌ **No audit logging, rate limiting, or monitoring**
 
-**📖 Read [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) for honest assessment**
-
-**📋 See [SECURITY.md](SECURITY.md) for what would be needed for production**
+**📖 Read [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) and [CHANGELOG.md](CHANGELOG.md)**
 
 **Suitable for**: Development, learning, proof-of-concept
-**NOT suitable for**: Production DMV operations, public deployment, real visitor data
+**NOT suitable for**: Production DMV operations, public deployment
 
 ## Overview
 
@@ -428,74 +425,9 @@ This project aligns with the California DMV's modernization efforts, including:
 - **Transparent**: Full visibility into the codebase
 - **Security-focused**: Following best practices for government systems
 
-## Changelog
-
-### v0.2.2 (Current) - Empty Queue Race Fix + Honest Documentation
-
-**Critical Fixes:**
-- **FIXED**: Empty queue race condition - now handles first ticket correctly using MAX(position)
-- Uses subquery with `FOR UPDATE` to lock rows before calculating position
-- Fixed for both empty queues and existing queues
-
-**Documentation Updates:**
-- Created [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) with honest assessment
-- Clearly states what IS and ISN'T production-ready
-- Documents performance trade-offs (correctness vs. scalability)
-- Explains why staff API key issue can't be "fixed" without architectural change
-
-**Known Limitations Documented**:
-- Staff API key still exposed to browsers (requires JWT rewrite)
-- State validation still partial (only completion enforced)
-- Performance issue with large queues (locks all tickets)
-- No tests, audit logging, or rate limiting
-
-### v0.2.1 - Race Condition Partial Fix
-
-**Critical Fixes:**
-- Attempted race condition fix with `.all()` instead of `.count()`
-- Added meaningful error messages for 500 errors
-- Fixed IP allowlist parsing bug
-
-**Issues**:
-- ❌ Still had empty queue race (both compute position=1)
-- ⚠️ Documentation claimed more was fixed than actually was
-
-### v0.2.0 - Initial Security Attempt
-
-**Additions:**
-- API key authentication (but key exposed to browsers)
-- Database locking attempts (but `.count()` doesn't lock)
-- Ticket collision handling
-- Healthcheck fixes
-
-**Issues Discovered**:
-- Race conditions not fully fixed
-- State validation incomplete
-- Documentation overstated what was fixed
-
-### v0.1 - Initial Release
-- Basic queue management functionality
-- Visitor and staff web interfaces
-- RESTful API with PostgreSQL storage
-- Many race conditions and security issues
-
 ---
 
-**Version**: 0.2.2
-**Status**: Development/Learning Version - **NOT PRODUCTION READY**
+**Version**: 0.3.0
+**Status**: Development/Demo Version - **NOT PRODUCTION READY**
 
-**Read First**: [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md)
-
-**Blockers for Production**:
-1. Staff API key exposed to browsers (architectural fix needed)
-2. State validation incomplete (only 1/6 transitions enforced)
-3. No automated tests (can't verify correctness)
-4. Performance issues with large queues
-5. No audit logging, monitoring, or rate limiting
-
-**Next Steps for v1.0**:
-- JWT/session authentication (server-side only)
-- Complete state machine validation
-- Comprehensive test suite
-- Sequence table for position assignment
-- Audit logging and monitoring
+See [CHANGELOG.md](CHANGELOG.md) for version history and [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) for production readiness assessment.

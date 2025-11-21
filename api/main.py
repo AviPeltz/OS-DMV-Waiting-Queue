@@ -8,7 +8,7 @@ import os
 from datetime import datetime
 
 from database import get_db
-from models import Branch, Service, Ticket
+from models import Branch, Service, Ticket, QueueCounter
 from schemas import (
     Branch as BranchSchema,
     Service as ServiceSchema,
@@ -113,27 +113,27 @@ def join_queue(
                 detail=f"Service {request.service_code} not found at this branch"
             )
 
-        # ATOMIC OPERATION: Get next position with proper locking
+        # ATOMIC OPERATION: Get next position using lightweight counter table
         #
-        # LIMITATION: This approach locks ALL waiting tickets for this queue,
-        # which blocks concurrent joins and doesn't scale well.
-        #
-        # For production, use one of these alternatives:
-        # 1. Dedicated sequence table per branch/service with SELECT...FOR UPDATE
-        # 2. PostgreSQL SEQUENCE objects
-        # 3. Advisory locks with pg_advisory_lock()
-        # 4. Redis atomic counters
-        #
-        # Current approach: Lock all waiting tickets to find MAX position
-        # This ensures correctness even for empty queues, but has performance cost.
-        waiting_tickets_subq = db.query(Ticket).filter(
-            Ticket.branch_id == branch_id,
-            Ticket.service_id == service.id,
-            Ticket.status == "waiting"
-        ).with_for_update().subquery()
+        # Lock a single counter row instead of all waiting tickets.
+        # Much faster and doesn't block other queues.
+        counter = db.query(QueueCounter).filter(
+            QueueCounter.branch_id == branch_id,
+            QueueCounter.service_id == service.id
+        ).with_for_update().first()
 
-        max_position = db.query(func.coalesce(func.max(waiting_tickets_subq.c.position), 0)).scalar()
-        position = max_position + 1
+        if not counter:
+            # First ticket for this queue - create counter
+            counter = QueueCounter(
+                branch_id=branch_id,
+                service_id=service.id,
+                next_position=1
+            )
+            db.add(counter)
+            db.flush()
+
+        position = counter.next_position
+        counter.next_position += 1
 
         # Create ticket with retry logic for unique constraint violations
         ticket_data = {
@@ -143,7 +143,7 @@ def join_queue(
             "position": position
         }
 
-        ticket = create_ticket_with_retry(db, ticket_data, branch.code)
+        ticket = create_ticket_with_retry(db, ticket_data, branch.code, service.prefix, position)
 
         # Commit transaction
         db.commit()
@@ -259,6 +259,9 @@ def call_next_ticket(
         if not next_ticket:
             raise HTTPException(status_code=404, detail="No tickets waiting in queue")
 
+        # Validate status transition
+        validate_status_transition(next_ticket, "called")
+
         # Update ticket status
         next_ticket.status = "called"
         next_ticket.called_at = datetime.utcnow()
@@ -333,6 +336,97 @@ def complete_ticket(
         raise HTTPException(
             status_code=500,
             detail="An unexpected error occurred while completing the ticket. Please try again."
+        )
+
+
+@app.post("/tickets/{ticket_number}/cancel")
+def cancel_ticket(
+    ticket_number: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Cancel a ticket (visitor endpoint)
+
+    Validates that ticket is in a cancellable state (waiting or called).
+    Completed/cancelled tickets cannot be cancelled.
+    """
+    try:
+        ticket = db.query(Ticket).filter(
+            Ticket.ticket_number == ticket_number
+        ).with_for_update().first()
+
+        if not ticket:
+            raise HTTPException(status_code=404, detail="Ticket not found")
+
+        # Validate status transition using general validator
+        validate_status_transition(ticket, "cancelled")
+
+        ticket.status = "cancelled"
+        ticket.completed_at = datetime.utcnow()  # Track when cancelled
+
+        db.commit()
+
+        # TODO: Broadcast cancellation
+        # broadcast_ticket_update(ticket.id, "cancelled")
+
+        return {"message": f"Ticket {ticket_number} cancelled successfully"}
+
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        import logging
+        logging.error(f"Unexpected error in cancel_ticket: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="An unexpected error occurred while cancelling the ticket. Please try again."
+        )
+
+
+@app.post("/tickets/{ticket_number}/return-to-queue")
+def return_ticket_to_queue(
+    ticket_number: str,
+    db: Session = Depends(get_db),
+    _token: str = Depends(verify_staff_token)
+):
+    """
+    PROTECTED: Return a called ticket back to waiting (staff endpoint)
+
+    Use case: Staff called wrong ticket or visitor not ready.
+    Validates that ticket is currently in 'called' status.
+    """
+    try:
+        ticket = db.query(Ticket).filter(
+            Ticket.ticket_number == ticket_number
+        ).with_for_update().first()
+
+        if not ticket:
+            raise HTTPException(status_code=404, detail="Ticket not found")
+
+        # Validate status transition
+        validate_status_transition(ticket, "waiting")
+
+        ticket.status = "waiting"
+        ticket.called_at = None  # Clear the called timestamp
+
+        db.commit()
+
+        # TODO: Broadcast return to queue
+        # broadcast_ticket_update(ticket.id, "returned")
+
+        return {"message": f"Ticket {ticket_number} returned to queue"}
+
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        import logging
+        logging.error(f"Unexpected error in return_ticket_to_queue: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="An unexpected error occurred. Please try again."
         )
 
 

@@ -3,7 +3,7 @@ Database initialization script
 Creates tables and seeds initial data from CSV
 """
 from database import engine, SessionLocal, Base
-from models import Branch, Service, Ticket
+from models import Branch, Service, Ticket, QueueCounter
 from sqlalchemy import text
 import time
 import sys
@@ -100,12 +100,12 @@ def init_db():
 
         # Create services for each branch
         service_types = [
-            {"code": "DL_RENEWAL", "name": "Driver License Renewal", "avg_time": 12.0},
-            {"code": "DL_NEW", "name": "New Driver License", "avg_time": 25.0},
-            {"code": "VR_RENEWAL", "name": "Vehicle Registration Renewal", "avg_time": 8.0},
-            {"code": "VR_NEW", "name": "New Vehicle Registration", "avg_time": 15.0},
-            {"code": "ID_CARD", "name": "ID Card", "avg_time": 10.0},
-            {"code": "REAL_ID", "name": "Real ID", "avg_time": 20.0},
+            {"code": "DL_RENEWAL", "name": "Driver License Renewal", "prefix": "A", "avg_time": 12.0},
+            {"code": "DL_NEW", "name": "New Driver License", "prefix": "B", "avg_time": 25.0},
+            {"code": "VR_RENEWAL", "name": "Vehicle Registration Renewal", "prefix": "C", "avg_time": 8.0},
+            {"code": "VR_NEW", "name": "New Vehicle Registration", "prefix": "D", "avg_time": 15.0},
+            {"code": "ID_CARD", "name": "ID Card", "prefix": "E", "avg_time": 10.0},
+            {"code": "REAL_ID", "name": "Real ID", "prefix": "F", "avg_time": 20.0},
         ]
 
         for branch in branches:
@@ -114,6 +114,7 @@ def init_db():
                     branch_id=branch.id,
                     code=svc["code"],
                     name=svc["name"],
+                    prefix=svc["prefix"],
                     avg_service_time_minutes=svc["avg_time"]
                 )
                 db.add(service)
