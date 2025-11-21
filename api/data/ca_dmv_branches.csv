@@ -1,0 +1,31 @@
+name,code,address,city,state,zip
+San Francisco DMV,SF01,1377 Fell St,San Francisco,CA,94117
+Oakland Claremont DMV,OAK01,5300 Claremont Ave,Oakland,CA,94618
+San Jose DMV,SJ01,111 W Alma Ave,San Jose,CA,95110
+Los Angeles - South LA DMV,LA01,3638 S Western Ave,Los Angeles,CA,90018
+Sacramento - Broadway DMV,SAC01,4700 Broadway,Sacramento,CA,95820
+San Diego - Clairemont DMV,SD01,4985 Clairemont Dr,San Diego,CA,92117
+Fresno DMV,FRS01,2626 E Jensen Ave,Fresno,CA,93706
+Long Beach DMV,LB01,3700 E Willow St,Long Beach,CA,90815
+Bakersfield DMV,BAK01,800 Buena Vista Rd,Bakersfield,CA,93311
+Riverside DMV,RIV01,6130 Magnolia Ave,Riverside,CA,92506
+Stockton DMV,STK01,3519 N El Dorado St,Stockton,CA,95204
+Modesto DMV,MOD01,1704 McHenry Ave,Modesto,CA,95350
+Santa Ana DMV,SA01,1330 S Grand Ave,Santa Ana,CA,92705
+Anaheim DMV,ANA01,1850 W Ball Rd,Anaheim,CA,92804
+Santa Rosa DMV,SR01,2570 Corby Ave,Santa Rosa,CA,95407
+Salinas DMV,SAL01,980 E Blanco Rd,Salinas,CA,93901
+Hayward DMV,HAY01,150 Jackson St,Hayward,CA,94544
+Pasadena DMV,PAS01,3636 E Foothill Blvd,Pasadena,CA,91107
+Pomona DMV,POM01,3175 Temple Ave,Pomona,CA,91768
+Torrance DMV,TOR01,3700 Torrance Blvd,Torrance,CA,90503
+Escondido DMV,ESC01,515 W Mission Ave,Escondido,CA,92025
+Sunnyvale DMV,SUN01,1220 Coleman Ave,Sunnyvale,CA,94089
+Orange DMV,ORA01,1330 E Katella Ave,Orange,CA,92867
+Fullerton DMV,FUL01,855 S Harbor Blvd,Fullerton,CA,92832
+Concord DMV,CON01,2070 Diamond Blvd,Concord,CA,94520
+Visalia DMV,VIS01,3220 S Mooney Blvd,Visalia,CA,93277
+Santa Clara DMV,SCL01,3665 Flora Vista Ave,Santa Clara,CA,95051
+Vallejo DMV,VAL01,328 Tuolumne St,Vallejo,CA,94590
+Berkeley DMV,BRK01,2433 San Pablo Ave,Berkeley,CA,94702
+El Cajon DMV,ELC01,1330 E Main St,El Cajon,CA,92021
